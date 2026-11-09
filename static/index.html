@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Origin Maine Mfg Ops</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <!-- Clean Top Header -->
+  <header class="top-bar">
+    <div class="brand-block">
+      <div class="brand-badge">ORIGIN</div>
+      <div>
+        <h1>Origin Maine Mfg Ops</h1>
+        <span class="subtitle" id="syncTimestamp">Connected to BigQuery</span>
+      </div>
+    </div>
+
+    <!-- Step / Page Switcher -->
+    <div class="page-Analyze-nav">
+      <button type="button" id="navPageInputs" class="page-tab active">
+        1. Calculator Inputs
+      </button>
+      <button type="button" id="navPageOutput" class="page-tab">
+        2. Proposed PO Output (<span id="navPoBadge">0</span> units)
+      </button>
+      <button type="button" id="navPageValidate" class="page-tab">
+        3. Validate New SKUs (<span id="navCandidateBadge">0</span>)
+      </button>
+      <button type="button" id="navPageArchived" class="page-tab">
+        4. Archived SKUs (<span id="navArchivedBadge">0</span>)
+      </button>
+      <button type="button" id="navPageAccess" class="page-tab">
+        5. Access &amp; Audit
+      </button>
+    </div>
+
+    <div class="header-actions">
+      <div id="userRoleBadge" class="user-role-badge" title="Current authenticated Google Workspace identity and role"></div>
+      <button id="btnSyncBQ" class="btn btn-secondary" type="button">↻ Sync BigQuery</button>
+    </div>
+  </header>
+
+  <!-- Read-Only Banner (shown when current user role is 'viewer' or previewing Read-Only mode) -->
+  <div id="readOnlyBanner" class="readonly-banner hidden">
+    <span>🔒 <strong>Read-Only Viewer Mode</strong> — You can view all tabs, Forward DOI projections, and backorder checks, but only authorized PO Generators can modify calculator inputs or export ShipHero PO CSVs.</span>
+    <button type="button" id="btnExitSimViewer" class="btn btn-sm btn-outline hidden">Exit Viewer Preview</button>
+  </div>
+
+  <!-- Google Cloud Re-Authentication Banner (shown with clickable OAuth link when local gcloud session expires) -->
+  <div id="gcloudAuthBanner" class="readonly-banner hidden" style="background:#eff6ff;border-bottom-color:#93c5fd;color:#1e3a8a;padding:12px 24px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span>🔑 <strong>Google Cloud Sign-In Needed:</strong> Your local BigQuery session expired. Click the button to sign in with your <code>@originmfg.com</code> Google account — BigQuery will sync automatically as soon as you finish:</span>
+      <a id="lnkGcloudSignIn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+        🔗 Click Here to Sign In with Google ↗
+      </a>
+    </div>
+    <button type="button" id="btnDismissAuthBanner" class="btn btn-sm btn-outline">Dismiss</button>
+  </div>
+
+  <!-- Product Category Tabs -->
+  <nav class="tabs-bar" id="tabsBar"></nav>
+
+  <!-- Recent PO Issued / Duplicate Production Guardrail Banner -->
+  <div id="recentPoBanner" class="readonly-banner hidden" style="background:#f0fdf4;border-bottom-color:#86efac;color:#14532d;padding:10px 24px;">
+    <div id="recentPoBannerText" style="flex:1;"></div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <label style="display:inline-flex;align-items:center;gap:6px;font-weight:700;cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="chkIncludePendingPo" checked style="width:16px;height:16px;accent-color:#16a34a;" />
+        Include Pending PO in On-Order
+      </label>
+      <button type="button" id="btnDiscardLatestPo" class="btn btn-sm btn-outline" title="Mark this exported CSV as a test/draft that was NOT uploaded to ShipHero">
+        ✕ Discard Export (Not Uploaded)
+      </button>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- PAGE 1: CALCULATOR INPUTS                                               -->
+  <!-- ======================================================================= -->
+  <main id="pageInputs" class="workspace">
+    <section class="inputs-bar">
+      <div class="q-inputs-group">
+        <div class="q-field">
+          <label for="inpDoiTarget">DOI Inv Target (<code>Q5</code>)</label>
+          <div class="stepper-group">
+            <button type="button" class="step-btn" data-target="inpDoiTarget" data-step="-5">-5</button>
+            <button type="button" class="step-btn" data-target="inpDoiTarget" data-step="-1">-1</button>
+            <input type="number" id="inpDoiTarget" step="1" min="0" max="365" />
+            <button type="button" class="step-btn" data-target="inpDoiTarget" data-step="1">+1</button>
+            <button type="button" class="step-btn" data-target="inpDoiTarget" data-step="5">+5</button>
+          </div>
+        </div>
+
+        <div class="q-field">
+          <label for="inpLeadTime">Lead Time Days (<code>Q6</code>)</label>
+          <div class="stepper-group">
+            <button type="button" class="step-btn" data-target="inpLeadTime" data-step="-1">-1</button>
+            <input type="number" id="inpLeadTime" step="1" min="0" max="180" />
+            <button type="button" class="step-btn" data-target="inpLeadTime" data-step="1">+1</button>
+          </div>
+        </div>
+
+        <button id="btnSaveTabDefaults" class="btn btn-outline" type="button" title="Save the current DOI Target and Lead Time as the default for this tab">Save Target &amp; Lead Time</button>
+      </div>
+
+      <div class="summary-metrics">
+        <div class="metric">
+          <span class="metric-label">Current Avail (Q1)</span>
+          <strong class="metric-val" id="kpiCurrentAvail">0</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Target Stock (Q2)</span>
+          <strong class="metric-val" id="kpiTargetStock">0</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">90D / 30D Velo</span>
+          <strong class="metric-val"><span id="kpiVelo90">0.0</span> / <span id="kpiVelo30">0.0</span></strong>
+        </div>
+        <div class="metric highlight">
+          <span class="metric-label">New PO Qty (Q4)</span>
+          <strong class="metric-val" id="kpiNewPoQty">0</strong>
+        </div>
+      </div>
+
+      <div class="go-output-action">
+        <button type="button" id="btnGoToOutput" class="btn btn-primary">
+          Analyze Proposed PO →
+        </button>
+      </div>
+    </section>
+
+    <!-- Full-Width SKU Input & Calculation Table -->
+    <section class="calc-panel">
+      <div class="panel-toolbar">
+        <div class="filter-pills" id="filterPills">
+          <button type="button" class="pill active" data-filter="all">All SKUs (<span id="cntAll">0</span>)</button>
+          <button type="button" class="pill pill-proposed" data-filter="proposed">Proposed (<span id="cntProposed">0</span>)</button>
+          <button type="button" class="pill hidden" id="pillRift" data-filter="rift">RIFT (<span id="cntRift">0</span>)</button>
+          <button type="button" class="pill hidden" id="pillClassic" data-filter="classic">CLASSIC (<span id="cntClassic">0</span>)</button>
+          <button type="button" class="pill" data-filter="on_site">On Site (<span id="cntOnSite">0</span>)</button>
+          <button type="button" class="pill" data-filter="phase_out">Phase Out (<span id="cntPhaseOut">0</span>)</button>
+          <button type="button" class="pill" data-filter="ignored">Ignored (<span id="cntIgnored">0</span>)</button>
+        </div>
+
+        <div class="toolbar-right">
+          <input type="search" id="inpSearch" class="search-input" placeholder="Filter by SKU, Style, Color, Size..." />
+          <button type="button" id="btnClearIgnored" class="btn btn-sm btn-outline hidden">Clear Ignored</button>
+          <button type="button" id="btnClearOverrides" class="btn btn-sm btn-outline hidden">Reset Overrides</button>
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="data-table" id="calcTable">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Style Name</th>
+              <th>Color</th>
+              <th>Size</th>
+              <th>Type</th>
+              <th class="center">On Site?</th>
+              <th class="center">Phase Out?</th>
+              <th class="center" title="Check to temporarily exclude this SKU from the proposed PO (e.g. raw material shortage)">Ignore?</th>
+              <th class="num">OHOO Target</th>
+              <th class="num">Available</th>
+              <th class="num">Backorder</th>
+              <th class="num">90D Velo</th>
+              <th class="num">30D Velo</th>
+              <th class="num">On Order</th>
+              <th class="num">Reqd</th>
+              <th class="num">PO Amt</th>
+            </tr>
+          </thead>
+          <tbody id="calcTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- PAGE 2: PROPOSED PO OUTPUT & ANALYSIS                                   -->
+  <!-- ======================================================================= -->
+  <main id="pageOutput" class="workspace hidden">
+    <section class="output-top-bar">
+      <button type="button" id="btnBackToInputs" class="btn btn-outline">
+        ← Back to Calculator Inputs
+      </button>
+
+      <div class="output-kpis">
+        <div class="metric highlight">
+          <span class="metric-label">Proposed PO Total</span>
+          <strong class="metric-val" id="outTotalUnits">0</strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Line Items (SKUs)</span>
+          <strong class="metric-val" id="outLineCount">0</strong>
+        </div>
+        <div class="metric" title="Weighted Post-PO Forward Days of Inventory across proposed SKUs with a Demand Plan">
+          <span class="metric-label">Projected Forward DOI</span>
+          <strong class="metric-val" id="outAvgForwardDoi">—</strong>
+        </div>
+        <div class="metric" id="outRiftMetric" class="hidden">
+          <span class="metric-label">CLASSIC / RIFT Split</span>
+          <strong class="metric-val"><span id="outClassicUnits">0</span> / <span id="outRiftUnits">0</span></strong>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Uncovered Backorders</span>
+          <strong class="metric-val" id="outUncoveredBo">0</strong>
+        </div>
+      </div>
+
+      <div class="export-controls-inline">
+        <div class="inline-field">
+          <label for="inpVendor">Vendor</label>
+          <input type="text" id="inpVendor" />
+        </div>
+        <div class="inline-field">
+          <label for="inpPoDate">PO Date</label>
+          <input type="date" id="inpPoDate" />
+        </div>
+        <div class="inline-field">
+          <label for="inpShipDate">Ship Date</label>
+          <input type="date" id="inpShipDate" />
+        </div>
+        <div class="inline-field">
+          <label for="selVendorSkuMode">Vendor SKU</label>
+          <select id="selVendorSkuMode">
+            <option value="style_name">Style Name</option>
+            <option value="sku">SKU Code</option>
+            <option value="blank">Blank</option>
+          </select>
+        </div>
+        <button type="button" id="btnCopySTU" class="btn btn-outline">📋 Copy Proposed PO</button>
+        <button type="button" id="btnExportCsv" class="btn btn-primary">⬇ Download ShipHero CSV</button>
+      </div>
+    </section>
+
+    <div id="exportStatusMsg" class="export-status hidden"></div>
+
+    <div class="output-grid">
+      <!-- Proposed PO Output Table -->
+      <section class="calc-panel">
+        <div class="panel-header">
+          <h2>Proposed Purchase Order Lines</h2>
+          <span class="subtitle">Sorted by <strong>Forward DOI Descending</strong> to highlight over-inventory &amp; Demand Plan variance</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>SKU Code</th>
+                <th>Style Name</th>
+                <th>Color</th>
+                <th>Size</th>
+                <th>Type</th>
+                <th class="num">Avail</th>
+                <th class="num">On Order</th>
+                <th class="num">Reqd</th>
+                <th class="num">PO Amt</th>
+                <th class="num" title="Current Month / Next Month Demand Plan units from origin_operations.sku_facts">Plan (CM/NM)</th>
+                <th class="num" title="Post-PO Net Supply (Available + On Order + PO Amt - Backorder) ÷ Forward Daily Demand Rate ((CM + NM) / 60)">Forward DOI ↓</th>
+              </tr>
+            </thead>
+            <tbody id="stuTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Right Side Summary: Breakdown by Style & Uncovered Backorders (W, X, Y) -->
+      <div class="output-side-stack">
+        <section class="calc-panel">
+          <div class="panel-header">
+            <h2>Summary by Style</h2>
+          </div>
+          <table class="data-table compact-table">
+            <thead>
+              <tr>
+                <th>Style Name</th>
+                <th>Type</th>
+                <th class="num">SKUs</th>
+                <th class="num">Total Units</th>
+                <th class="num" title="Aggregate Post-PO Forward DOI for this style">Forward DOI</th>
+              </tr>
+            </thead>
+            <tbody id="styleSummaryBody"></tbody>
+          </table>
+        </section>
+
+        <section class="calc-panel">
+          <div class="panel-header">
+            <h2>Backorder Check</h2>
+            <span class="subtitle">SKUs where <code>Backorder &gt; On Order</code></span>
+          </div>
+          <table class="data-table compact-table">
+            <thead>
+              <tr>
+                <th>SKU Code</th>
+                <th>Style Name</th>
+                <th class="num">Backorder</th>
+                <th class="num">On Order</th>
+                <th class="num">Reqd</th>
+                <th class="num">PO Amt</th>
+              </tr>
+            </thead>
+            <tbody id="wxyTableBody"></tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- PAGE 3: VALIDATE NEW & PRE-LAUNCH SKUS (FROM SKU_FACTS)                 -->
+  <!-- ======================================================================= -->
+  <main id="pageValidate" class="workspace hidden">
+    <section class="calc-panel">
+      <div class="panel-header">
+        <div>
+          <h2>New &amp; Unmapped SKU Validation Queue (<code>origin_operations.sku_facts</code>)</h2>
+          <p class="subtitle">
+            Discover and validate new styles, colorways, or size runs defined in BigQuery ahead of launch. Factory seconds (<code>-X</code>) and customized (<code>-C</code>) SKUs are automatically excluded.
+          </p>
+        </div>
+        <div class="toolbar-right">
+          <button type="button" id="btnGoToArchived" class="btn btn-sm btn-outline">View Archived SKUs →</button>
+        </div>
+      </div>
+
+      <div class="panel-toolbar">
+        <div class="filter-pills" id="candFilterPills">
+          <button type="button" class="pill active" data-cfilter="tracked_style_expansion">
+            New Colors/Sizes on Active Styles (<span id="cntCandExpansion">0</span>)
+          </button>
+          <button type="button" class="pill" data-cfilter="new_bjj_style">
+            New BJJ / Pre-Launch Styles (<span id="cntCandNewBjj">0</span>)
+          </button>
+          <button type="button" class="pill" data-cfilter="compression">
+            Compression Styles (<span id="cntCandCompression">0</span>)
+          </button>
+        </div>
+        <div class="toolbar-right">
+          <input type="search" id="inpCandSearch" class="search-input" placeholder="Search style #, name, color, SKU..." />
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="data-table" id="candTable">
+          <thead>
+            <tr>
+              <th>Style #</th>
+              <th>Style Name</th>
+              <th>Color</th>
+              <th>Sizes Found (<span class="subtitle">in sku_facts</span>)</th>
+              <th class="center">On Site</th>
+              <th class="num">90D Sold</th>
+              <th class="num">Backorder</th>
+              <th class="num">Demand Plan</th>
+              <th>Validation Status</th>
+              <th>Target Calculator Tab</th>
+              <th>Assign Type</th>
+              <th class="center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="candTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- PAGE 4: ARCHIVED & EXCLUDED SKU GROUPS                                  -->
+  <!-- ======================================================================= -->
+  <main id="pageArchived" class="workspace hidden">
+    <section class="calc-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Archived &amp; Excluded SKU Groups</h2>
+          <p class="subtitle">
+            Review archived styles, legacy collaborations, or previously dismissed SKU groups. You can transfer any group directly into a mapped calculator tab or return it to the validation queue.
+          </p>
+        </div>
+        <div class="toolbar-right">
+          <button type="button" id="btnBackToValidate" class="btn btn-sm btn-outline">← Back to Validation Queue</button>
+        </div>
+      </div>
+
+      <div class="panel-toolbar">
+        <div class="filter-pills">
+          <span class="subtitle" id="archivedSummaryCount">0 archived groups</span>
+        </div>
+        <div class="toolbar-right">
+          <input type="search" id="inpArchSearch" class="search-input" placeholder="Search archived style #, name, color, SKU..." />
+        </div>
+      </div>
+
+      <div class="table-scroll">
+        <table class="data-table" id="archTable">
+          <thead>
+            <tr>
+              <th>Style #</th>
+              <th>Style Name</th>
+              <th>Color</th>
+              <th>Category</th>
+              <th>Sizes Found (<span class="subtitle">in sku_facts</span>)</th>
+              <th>Archive Status</th>
+              <th class="num">90D Sold</th>
+              <th class="num">Backorder</th>
+              <th>Transfer to Calculator Tab</th>
+              <th>Assign Type</th>
+              <th class="center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="archTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- PAGE 5: AUTHORIZATION, ACCESS CONTROL & PO AUDIT LOG                    -->
+  <!-- ======================================================================= -->
+  <main id="pageAccess" class="workspace hidden">
+    <div class="output-grid" style="grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.85fr);">
+      <!-- Left: Role-Based Access Control -->
+      <section class="calc-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Authorized PO Generators &amp; Roles</h2>
+            <p class="subtitle">
+              Control which <code>@originmfg.com</code> accounts can modify calculator targets, validate SKUs, and generate ShipHero PO CSVs. All other authenticated users default to <strong>Read-Only Viewer</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div style="padding: 16px 18px; border-bottom: 1px solid var(--border); background: #f8fafc; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div>
+            <div style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Signed In As</div>
+            <div id="accessCurrentUserSummary" style="font-size: 14.5px; font-weight: 700; margin-top: 2px;">—</div>
+          </div>
+          <button type="button" id="btnToggleSimViewer" class="btn btn-sm btn-outline">
+            👁️ Preview as Read-Only Viewer
+          </button>
+        </div>
+
+        <div id="addUserFormBox" style="padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <input
+            type="email"
+            id="inpNewUserEmail"
+            class="search-input"
+            style="flex: 1; min-width: 210px;"
+            placeholder="colleague@originmfg.com"
+          />
+          <select id="selNewUserRole" style="padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13.5px; background: #fff;">
+            <option value="po_generator">PO Generator</option>
+            <option value="admin">Admin + PO Generator</option>
+          </select>
+          <button type="button" id="btnAddAuthorizedUser" class="btn btn-primary">
+            + Authorize User
+          </button>
+        </div>
+
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Authorized Email</th>
+                <th>Role &amp; Permissions</th>
+                <th class="center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="accessUsersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Right: Purchase Order Generation Audit Log -->
+      <section class="calc-panel">
+        <div class="panel-header">
+          <div>
+            <h2>Purchase Order Generation Audit Log</h2>
+            <p class="subtitle">
+              Automatic history of every ShipHero PO CSV generated from this application, including user email, timestamp, tab, and unit totals.
+            </p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Generated By</th>
+                <th>Tab</th>
+                <th>Vendor</th>
+                <th>Ship Date</th>
+                <th class="num">SKUs</th>
+                <th class="num">Total Units</th>
+                <th>On-Order Bridge Status</th>
+                <th>Export File</th>
+                <th class="center">Action</th>
+              </tr>
+            </thead>
+            <tbody id="auditLogBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
