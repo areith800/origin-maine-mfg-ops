@@ -2685,7 +2685,7 @@
       "name": "Gi Jackets",
       "vendor": "Gi Jackets",
       "vendor_sku_mode": "style_name",
-      "doi_target": 70.0,
+      "doi_target": 65.0,
       "lead_time": 14.0,
       "batch_rule": "jacket_6",
       "batch_description": "Min 6, else round to nearest 6 (Group RIFT runs 42-72 in ~300 batch)",
@@ -12109,5 +12109,230 @@
       "andy@originmfg.com"
     ]
   },
-  "po_audit_log": []
+  "po_audit_log": [
+    {
+      "export_id": "exp_1794319997478_JACKET_PO_CALC",
+      "timestamp": "2026-11-10T14:13:17.478333+00:00",
+      "user_email": "andy@originmfg.com",
+      "tab_id": "JACKET_PO_CALC",
+      "vendor": "Gi Jackets",
+      "ship_date": "2026-11-24",
+      "line_count": 42,
+      "total_units": 262,
+      "filename": "ShipHero_PO_Gi_Jackets_JACKET_PO_CALC_2026-11-24.csv",
+      "status": "active",
+      "sku_items": {
+        "1000023-100-A0": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 4.0
+        },
+        "1000023-100-A1": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 13.0
+        },
+        "1000023-100-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 7.0,
+          "bq_avail_baseline": 46.0
+        },
+        "1000023-100-A3": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 47.0
+        },
+        "1000023-100-A3L": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 6.0
+        },
+        "1000023-200-A1": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 7.0
+        },
+        "1000023-200-A3L": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 7.0
+        },
+        "1000113-100-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 38.0
+        },
+        "1000113-100-A3": {
+          "po_qty": 12,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 41.0
+        },
+        "1000113-158-A3": {
+          "po_qty": 6,
+          "bq_wip_baseline": 12.0,
+          "bq_avail_baseline": 37.0
+        },
+        "1000113-200-A1": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 19.0
+        },
+        "1000113-200-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 45.0
+        },
+        "1000113-200-A3": {
+          "po_qty": 18,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 49.0
+        },
+        "1000113-200-A4": {
+          "po_qty": 12,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 16.0
+        },
+        "1000113-301-A1": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 4.0
+        },
+        "1000113-301-A4": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 14.0
+        },
+        "1000113-401-A0": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 6.0
+        },
+        "1000113-401-A3": {
+          "po_qty": 6,
+          "bq_wip_baseline": 18.0,
+          "bq_avail_baseline": 29.0
+        },
+        "1000140-100-A1": {
+          "po_qty": 1,
+          "bq_wip_baseline": 1.0,
+          "bq_avail_baseline": 0.0
+        },
+        "1000140-200-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 20.0
+        },
+        "1000140-200-A2L": {
+          "po_qty": 1,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 0.0
+        },
+        "1000140-200-A3L": {
+          "po_qty": 1,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 0.0
+        },
+        "1000141-100-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 22.0
+        },
+        "1000141-100-A3": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 21.0
+        },
+        "1000141-100-A3L": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 6.0
+        },
+        "1000141-200-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 34.0
+        },
+        "1000141-200-A3": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 35.0
+        },
+        "1000570-200-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 17.0
+        },
+        "1000591-100-A1": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 5.0
+        },
+        "1000591-100-A3": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 17.0
+        },
+        "1000591-100-A4": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 11.0
+        },
+        "1000591-200-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 41.0
+        },
+        "1000591-200-A3": {
+          "po_qty": 12,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 49.0
+        },
+        "1000591-200-A4": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 26.0
+        },
+        "1000591-200-A5": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 5.0
+        },
+        "1000614-100-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 22.0
+        },
+        "1000614-100-A3": {
+          "po_qty": 6,
+          "bq_wip_baseline": 0.0,
+          "bq_avail_baseline": 15.0
+        },
+        "1000614-200-A2": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 23.0
+        },
+        "1000614-200-A3": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 14.0
+        },
+        "1000614-200-A4": {
+          "po_qty": 6,
+          "bq_wip_baseline": 6.0,
+          "bq_avail_baseline": 2.0
+        },
+        "1000691-151-A3L": {
+          "po_qty": 1,
+          "bq_wip_baseline": 3.0,
+          "bq_avail_baseline": 0.0
+        },
+        "1000691-151-A4": {
+          "po_qty": 6,
+          "bq_wip_baseline": 4.0,
+          "bq_avail_baseline": 0.0
+        }
+      }
+    }
+  ]
 }

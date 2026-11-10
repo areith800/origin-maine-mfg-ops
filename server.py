@@ -880,6 +880,18 @@ class POGeneratorHandler(BaseHTTPRequestHandler):
                 po_note = body.get("po_note", "")
                 lines = body.get("lines", [])
 
+                # Persist active DOI Target & Lead Time used for this export so state refresh doesn't revert unsaved inputs
+                target_tab = next((t for t in cfg.get("tabs", []) if t["id"] == tab_id), None)
+                if target_tab:
+                    if body.get("doi_target") is not None:
+                        target_tab["doi_target"] = float(body["doi_target"])
+                    if body.get("lead_time") is not None:
+                        target_tab["lead_time"] = float(body["lead_time"])
+                    if vendor:
+                        target_tab["vendor"] = str(vendor).strip()
+                    if vendor_sku_mode:
+                        target_tab["vendor_sku_mode"] = str(vendor_sku_mode).strip()
+
                 csv_text, line_count, total_units = generate_shiphero_csv_text(
                     vendor=vendor,
                     ship_date=ship_date,

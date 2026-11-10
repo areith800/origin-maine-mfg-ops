@@ -52,6 +52,7 @@ def compute_row_math(
     batch_rule: str,
     manual_po_override: int | None = None,
     enforce_on_site_guardrail: bool = True,
+    pending_po_qty: float = 0.0,
 ) -> dict:
     """
     Bulletproof implementation of the Origin BJJ PO Calculator math.
@@ -90,28 +91,29 @@ def compute_row_math(
         # Fix #1: Clamp Phase-Out / MTO PO Amt to MAX(0, ROUND(M, 0)) so excess WIP never creates negative POs
         calc_po_amt = max(0, int(excel_round(reqd, 0)))
     else:
+        has_pending = float(pending_po_qty or 0.0) > 0
         if reqd <= 0:
             calc_po_amt = 0
         elif batch_rule == "nogi_10":
             # =IF(M2>0, IF(AND(M2>0, M2<10), 10, ROUND(M2/10, 0)*10), 0)
-            calc_po_amt = 10 if reqd < 10 else int(excel_round(reqd / 10.0, 0) * 10)
+            calc_po_amt = int(excel_round(reqd / 10.0, 0) * 10) if has_pending else (10 if reqd < 10 else int(excel_round(reqd / 10.0, 0) * 10))
         elif batch_rule == "pant_10":
             # =IF(M2>0, IF(AND(M2>0, M2<6), 10, ROUND(M2/10, 0)*10), 0)
-            calc_po_amt = 10 if reqd < 6 else int(excel_round(reqd / 10.0, 0) * 10)
+            calc_po_amt = int(excel_round(reqd / 10.0, 0) * 10) if has_pending else (10 if reqd < 6 else int(excel_round(reqd / 10.0, 0) * 10))
         elif batch_rule == "jacket_6":
             # =IF(M2>0, IF(AND(M2>0, M2<6), 6, ROUND(M2/6, 0)*6), 0)
-            calc_po_amt = 6 if reqd < 6 else int(excel_round(reqd / 6.0, 0) * 6)
+            calc_po_amt = int(excel_round(reqd / 6.0, 0) * 6) if has_pending else (6 if reqd < 6 else int(excel_round(reqd / 6.0, 0) * 6))
         elif batch_rule == "youth_6":
             # =IF(M2>0, IF(AND(M2>0, M2<4), ROUND(M2, 0), ROUND(M2/6, 0)*6), 0)
-            calc_po_amt = int(excel_round(reqd, 0)) if reqd < 4 else int(excel_round(reqd / 6.0, 0) * 6)
+            calc_po_amt = int(excel_round(reqd / 6.0, 0) * 6) if has_pending else (int(excel_round(reqd, 0)) if reqd < 4 else int(excel_round(reqd / 6.0, 0) * 6))
         elif batch_rule == "acc_1":
             # In BJJACC_PO_CALC, Sling Sacks (9000014) batch in multiples of 6:
             # =IF(M37>0, IF(AND(M37>0, M37<3), 6, MROUND(M37, 6)), 0)
             # While Belts (9000057, 9000077) batch in whole units (min 1):
             if sku.startswith("9000014"):
-                calc_po_amt = 6 if reqd < 3 else int(excel_round(reqd / 6.0, 0) * 6)
+                calc_po_amt = int(excel_round(reqd / 6.0, 0) * 6) if has_pending else (6 if reqd < 3 else int(excel_round(reqd / 6.0, 0) * 6))
             else:
-                calc_po_amt = 1 if reqd < 1 else int(excel_round(reqd, 0))
+                calc_po_amt = int(excel_round(reqd, 0)) if has_pending else (1 if reqd < 1 else int(excel_round(reqd, 0)))
         else:
             calc_po_amt = int(excel_round(reqd, 0))
 

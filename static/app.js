@@ -65,6 +65,7 @@ function computeRowMath({
   leadTime,
   batchRule,
   manualPoOverride,
+  pendingPoQty = 0,
 }) {
   const v90 = Number(velo90d || 0);
   const v30 = Number(velo30d || 0);
@@ -87,23 +88,27 @@ function computeRowMath({
     : ohooTarget + bo + leadTimeDemand - avail - wip;
 
   // Column N: Calculated PO Amt
+  // When a SKU already has an active Pending PO in flight (pendingPoQty > 0),
+  // do not re-trigger the minimum-batch floor (e.g. reqd < 6 -> 6) on the
+  // fractional remainder left behind when ROUND(reqd/batch)*batch rounded down.
+  const hasPending = Number(pendingPoQty || 0) > 0;
   let calcPoAmt = 0;
   if (isPhaseOut) {
     calcPoAmt = Math.max(0, excelRound(reqd, 0));
   } else if (reqd > 0) {
     if (batchRule === "nogi_10") {
-      calcPoAmt = reqd < 10 ? 10 : excelRound(reqd / 10, 0) * 10;
+      calcPoAmt = hasPending ? excelRound(reqd / 10, 0) * 10 : reqd < 10 ? 10 : excelRound(reqd / 10, 0) * 10;
     } else if (batchRule === "pant_10") {
-      calcPoAmt = reqd < 6 ? 10 : excelRound(reqd / 10, 0) * 10;
+      calcPoAmt = hasPending ? excelRound(reqd / 10, 0) * 10 : reqd < 6 ? 10 : excelRound(reqd / 10, 0) * 10;
     } else if (batchRule === "jacket_6") {
-      calcPoAmt = reqd < 6 ? 6 : excelRound(reqd / 6, 0) * 6;
+      calcPoAmt = hasPending ? excelRound(reqd / 6, 0) * 6 : reqd < 6 ? 6 : excelRound(reqd / 6, 0) * 6;
     } else if (batchRule === "youth_6") {
-      calcPoAmt = reqd < 4 ? excelRound(reqd, 0) : excelRound(reqd / 6, 0) * 6;
+      calcPoAmt = hasPending ? excelRound(reqd / 6, 0) * 6 : reqd < 4 ? excelRound(reqd, 0) : excelRound(reqd / 6, 0) * 6;
     } else if (batchRule === "acc_1") {
       if (String(sku).startsWith("9000014")) {
-        calcPoAmt = reqd < 3 ? 6 : excelRound(reqd / 6, 0) * 6;
+        calcPoAmt = hasPending ? excelRound(reqd / 6, 0) * 6 : reqd < 3 ? 6 : excelRound(reqd / 6, 0) * 6;
       } else {
-        calcPoAmt = reqd < 1 ? 1 : excelRound(reqd, 0);
+        calcPoAmt = hasPending ? excelRound(reqd, 0) : reqd < 1 ? 1 : excelRound(reqd, 0);
       }
     } else {
       calcPoAmt = excelRound(reqd, 0);
@@ -217,6 +222,7 @@ function evaluateTab(tab) {
       leadTime: tab.lead_time,
       batchRule: tab.batch_rule,
       manualPoOverride: item.manual_po_override,
+      pendingPoQty: src.pendingPoQty,
     });
 
     sumAvail += src.available;
@@ -1827,6 +1833,8 @@ async function initApp() {
       "/api/export-shiphero-csv",
       {
         tab_id: tab.id,
+        doi_target: tab.doi_target,
+        lead_time: tab.lead_time,
         vendor,
         po_date: poDate,
         ship_date: shipDate,
@@ -1838,6 +1846,7 @@ async function initApp() {
 
     if (res.state) {
       applyServerState(res.state);
+      syncInputsFromActiveTab();
     } else if (res.po_audit_log && state.config) {
       state.config.po_audit_log = res.po_audit_log;
       renderAccessAndAuditPage();
