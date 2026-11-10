@@ -260,13 +260,20 @@ def get_gcp_access_token() -> str:
 
     # Local workstation gcloud CLI check (fast, non-blocking)
     gcloud_cmd = get_gcloud_cmd()
-    token_proc = subprocess.run(
-        [gcloud_cmd, "auth", "print-access-token"],
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=8,
-    )
+    try:
+        token_proc = subprocess.run(
+            [gcloud_cmd, "auth", "print-access-token"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=20,
+        )
+    except subprocess.TimeoutExpired:
+        raise GCloudAuthExpiredError(
+            "Your local Google Cloud (gcloud) authentication check timed out. "
+            "Your session likely expired overnight. Click 'Sign In with Google' above to refresh credentials."
+        )
+
     if token_proc.returncode != 0:
         err_detail = (token_proc.stderr or token_proc.stdout or "").strip()
         raise GCloudAuthExpiredError(
